@@ -18,9 +18,13 @@ void f_klaw(volatile uint8_t *KPIN,
 		uint8_t key_mask, uint16_t rep_time, uint16_t rep_wait,
 		void (*push_proc)(void), void (*rep_proc)(void) );
 
+void menu_wyswietl_normalnie(menu_t *menu);
+
 void menu_wyswietl(uint8_t wybor, menu_t *menu);
 
-uint8_t menu_ustaw();
+void menu_ustaw(uint8_t wybor, uint8_t wartosc, menu_t *menu);
+
+uint8_t menu_pobierz_wartosc(uint8_t wybor, uint8_t *wartosc,  menu_t *menu);
 
 void menu_domyslne(menu_t *menu);
 
@@ -40,7 +44,9 @@ void ustaw_czas_wodospad(menu_t *menu, czas_t czas_od, czas_t czas_do);
 
 void przekaznik(uint8_t wybor);
 
-void triak(uint8_t wybor);
+void triak_t1(uint8_t wybor); // grzanie
+
+void triak_t2(uint8_t wybor); // wodospad
 
 void wyswietl_napis(char *str);
 

@@ -15,6 +15,30 @@
 
 #include "LCD/lcd44780.h"
 
+#define RTC_INT 	(1 << PD2)
+#define BUTTON		(1 << PD1)
+
+#define T1_TRIAC	(1 << PB7)
+#define T2_TRIAC 	(1 << PB6)
+
+#define T1_ON		PORTB |= T1_TRIAC;
+#define T1_OFF		PORTB &= ~T1_TRIAC;
+#define T2_ON		PORTB |= T2_TRIAC;
+#define T2_OFF		PORTB &= ~T2_TRIAC;
+
+#define BUTTON_UP	(1 << PC2)
+#define BUTTON_DOWN	(1 << PC3)
+
+#define ENKODER_DDR DDRC
+#define ENKODER_PIN PINC
+#define ENKODER_PORT PORTC
+#define ENKODER_A (1 << PC3)
+#define ENKODER_B (1 << PC2)
+#define ENKODER_SW //BUTTON
+
+#define BACKLIGHT_ON PORTC &= ~(1 << PC0);
+#define BACKLIGHT_OFF PORTC |= (1 << PC0);
+
 typedef struct {
 	uint8_t godz;
 	uint8_t min;
@@ -22,7 +46,7 @@ typedef struct {
 
 typedef struct {
 	czas_t czas;
-	uint8_t temp;
+	uint16_t temp;
 	czas_t czas_OD_led1;
 	czas_t czas_DO_led1;
 	czas_t czas_OD_led2;

@@ -7,18 +7,18 @@
 #define USE_RW 0
 
 #define LCD_D7PORT  B
-#define LCD_D7 2
+#define LCD_D7 5
 #define LCD_D6PORT  B
-#define LCD_D6 3
+#define LCD_D6 4
 #define LCD_D5PORT  B
-#define LCD_D5 4
+#define LCD_D5 3
 #define LCD_D4PORT  B
-#define LCD_D4 5
+#define LCD_D4 2
 
 #define LCD_RSPORT B
 #define LCD_RS 0
 
-#define LCD_RWPORT A
+#define LCD_RWPORT B
 #define LCD_RW 1
 
 #define LCD_EPORT B
