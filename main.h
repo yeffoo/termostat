@@ -15,7 +15,18 @@
 
 #include "LCD/lcd44780.h"
 
+/*
+
+ 		W		H
+ ~		A		E
+ A	 	T		A
+ C	 	E		T
+ 	 	R
+
+ */
+
 #define RTC_INT 	(1 << PD2)
+#define ENCODER_INT	(1 << PD3)
 #define BUTTON		(1 << PD1)
 
 #define T1_TRIAC	(1 << PB7)

@@ -8,7 +8,7 @@
 #include "twi.h"
 #include "pcf8583.h"
 
-uint8_t bcd_to_bin( uint8_t bcd) {
+uint8_t bcd2bin( uint8_t bcd) {
 	return ( 10*(bcd >> 4) + (bcd & 0x0f) );
 }
 
@@ -42,7 +42,7 @@ void pcf8583_set_time(czas_t *czas) {
 }
 
 void pcf8583_read_time(czas_t *czas) {
-	czas->godz = bcd_to_bin(PCF8583_read(4));
-	czas->min = bcd_to_bin(PCF8583_read(3));
+	czas->godz = bcd2bin(PCF8583_read(4));
+	czas->min = bcd2bin(PCF8583_read(3));
 }
 

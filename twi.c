@@ -21,3 +21,4 @@ unsigned char twi_read(char ack) {
 	while (!(TWCR & (1 << TWINT)));
 	return TWDR;
 }
+

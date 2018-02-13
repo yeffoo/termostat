@@ -6,29 +6,22 @@
  */
 
 #include "main.h"
-#include "enkoder.h"
 
-extern volatile uint8_t tick_1ms;
 extern volatile uint16_t timer1; // ds18b20
-extern volatile uint16_t timer2; // refresh LCD
 extern volatile uint16_t timer3; // refresh heating
 extern volatile uint16_t timer4; // switch
 extern volatile uint16_t timer5; // menu
-extern volatile uint16_t timer6; // switches UD
 extern volatile uint16_t timer7; // backlight
 
 extern volatile uint16_t rtc_flag;
-extern volatile uint16_t button_flag;
+extern volatile int8_t zmienna;
 
 ISR(TIMER2_COMPA_vect) {
 	uint16_t x;
-	tick_1ms++;
+
 	x = timer1;
 	if(x)
 		timer1 = --x;
-	x = timer2;
-	if(x)
-		timer2 = --x;
 	x = timer3;
 	if(x)
 		timer3 = --x;
@@ -38,13 +31,9 @@ ISR(TIMER2_COMPA_vect) {
 	x = timer5;
 	if(x)
 		timer5 = --x;
-	x = timer6;
-	if(x)
-		timer6 = --x;
 	x = timer7;
 	if(x)
 		timer7 = --x;
-	encPool();
 }
 
 ISR(INT0_vect) {
@@ -52,9 +41,10 @@ ISR(INT0_vect) {
 }
 
 ISR(INT1_vect) {
-	button_flag = 1;
+	timer5 = 4000;
+	if( !(PINC & ENKODER_A) ) {
+		zmienna = 1;
+	}
+	else
+		zmienna = -1;
 }
-
-//ISR(PCINT2_vect) {
-//	button_flag = 1;
-//}

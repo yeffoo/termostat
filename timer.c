@@ -6,17 +6,16 @@
  */
 
 #include "timer.h"
-#include "enkoder.h"
 
 void timer0_init() {
 	DDRD |= (1 << PD5) | (1 << PD6);
 
 	TCCR0A |= (1 << COM0A1) | (1 << COM0B1); // output
-	TCCR0A |= (1 << WGM01) | (1 << WGM00); // fast PWM
+	TCCR0A |= (1 << WGM02) | (1 << WGM00); // phase correct
 	TCCR0B |= (1 << CS02); // /256
 
-	OCR0A = 220;	// PD6
-	OCR0B = 220;	// PD5
+	OCR0A = 0;	// PD6
+	OCR0B = 0;	// PD5
 }
 
 void timer2_init() {

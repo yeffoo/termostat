@@ -16,8 +16,6 @@
 #define SET_E 	PORT(LCD_EPORT) |= (1<<LCD_E)		
 #define CLR_E 	PORT(LCD_EPORT) &= ~(1<<LCD_E)		
 
-uint8_t check_BF(void);
-
 static inline void data_dir_out(void) {
 	DDR(LCD_D7PORT)	|= (1<<LCD_D7);
 	DDR(LCD_D6PORT)	|= (1<<LCD_D6);

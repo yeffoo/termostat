@@ -12,46 +12,20 @@
 
 #include "eeprom.h"
 
-void f_klaw_UD(volatile uint8_t *KPIN, uint8_t key_mask, uint16_t time, void (*func)(void));
-
 void f_klaw(volatile uint8_t *KPIN,
 		uint8_t key_mask, uint16_t rep_time, uint16_t rep_wait,
 		void (*push_proc)(void), void (*rep_proc)(void) );
 
-void menu_wyswietl_normalnie(menu_t *menu);
+void menu_wyswietl_normalnie(menu_t *menu, uint8_t *var);
 
-void menu_wyswietl(uint8_t wybor, menu_t *menu);
-
-void menu_ustaw(uint8_t wybor, uint8_t wartosc, menu_t *menu);
-
-uint8_t menu_pobierz_wartosc(uint8_t wybor, uint8_t *wartosc,  menu_t *menu);
+void menu_ustaw(uint8_t wybor, int8_t wartosc, menu_t *menu);
 
 void menu_domyslne(menu_t *menu);
-
-void ustaw_temp(menu_t *menu, uint8_t temp);
-
-void ustaw_czas(czas_t czas);
-
-void ustaw_czas_led1(menu_t *menu, czas_t czas_od, czas_t czas_do);
-
-void ustaw_czas_led2(menu_t *menu, czas_t czas_od, czas_t czas_do);
-
-void ustaw_jasnosc_led1(menu_t *menu, uint8_t jasnosc);
-
-void ustaw_jasnosc_led2(menu_t *menu, uint8_t jasnosc);
-
-void ustaw_czas_wodospad(menu_t *menu, czas_t czas_od, czas_t czas_do);
-
-void przekaznik(uint8_t wybor);
-
-void triak_t1(uint8_t wybor); // grzanie
-
-void triak_t2(uint8_t wybor); // wodospad
 
 void wyswietl_napis(char *str);
 
 void zapisz_ustawienia(menu_t *menu);
 
-menu_t wczytaj_ustawienia();
+void wczytaj_ustawienia(menu_t *menu);
 
 #endif /* MENU_H_ */

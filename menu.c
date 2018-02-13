@@ -6,15 +6,14 @@
  */
 
 #include "menu.h"
+#include "pcf8583.h"
 
-extern uint8_t subzero, cel, cel_fract_bits;
 extern uint16_t temp_pobrana;
 
 extern volatile uint16_t timer4; // switch
 extern volatile uint16_t timer5; // menu
-extern volatile uint16_t timer6; // switches UD
 
-uint8_t menu_state, menu_pos;
+uint8_t menu_pos;
 
 void f_klaw(volatile uint8_t *KPIN,
 		uint8_t key_mask, uint16_t rep_time, uint16_t rep_wait,
@@ -36,11 +35,12 @@ void f_klaw(volatile uint8_t *KPIN,
 	} else
 	if( !timer5 ) {
 		menu_pos = 0;
-		BACKLIGHT_OFF;
+//		BACKLIGHT_OFF;
 	}
 
 	if( key_state  ) {
-		BACKLIGHT_ON;
+//		timer5 = 4000;
+//		BACKLIGHT_ON;
 		if( key_press && debounce==key_state && !timer4 ) {
 
 			key_state = go_rep;
@@ -51,7 +51,7 @@ void f_klaw(volatile uint8_t *KPIN,
 				timer5 = 4000;
 				menu_pos++;
 			}
-			if( menu_pos >= 16 )
+			if( menu_pos >= 12 )
 				menu_pos = 1;
 		} else
 		if( !key_press && key_state>debounce && key_state<rep ) {
@@ -83,19 +83,18 @@ void f_klaw(volatile uint8_t *KPIN,
 	if( key_state>=wait_rep && !key_press ) {
 		key_state = idle;
 		last_key = 0;
+//		BACKLIGHT_OFF;
 	}
 }
 
 enum emenu_wyswietl {temperatura=1, czas_led1, czas_led2, jasnosc_led1, jasnosc_led2, czas_wodospad, czas_systemowy};
 
-void menu_wyswietl_normalnie(menu_t *menu) {
+void menu_wyswietl_normalnie(menu_t *menu, uint8_t *var) {
 	lcd_cls();
 	wyswietl_napis("Temp.: ");
 	lcd_int(temp_pobrana/10);
 	lcd_char('.');
 	lcd_int(temp_pobrana%10);
-	lcd_locate(0, 15);
-//		lcd_int(i);
 	lcd_locate(1, 5);
 	lcd_int(menu->czas.godz);
 	lcd_char(':');
@@ -107,23 +106,22 @@ void menu_wyswietl_normalnie(menu_t *menu) {
 		lcd_int(menu->czas.min);
 }
 
-extern czas_t czas_gl;
-
-enum emenu_ustaw {czas_wodospad_godz_OD=1, czas_wodospad_min_OD, czas_wodospad_godz_DO, czas_wodospad_min_DO,
-				  czas_led1_godz_OD, czas_led1_min_OD, czas_led1_godz_DO, czas_led1_min_DO,
-				  czas_led2_godz_OD, czas_led2_min_OD, czas_led2_godz_DO, czas_led2_min_DO,
+enum emenu_ustaw {czas_wodospad_godz_OD=1, czas_wodospad_godz_DO,
+				  czas_led1_godz_OD, czas_led1_godz_DO,
+				  czas_led2_godz_OD, czas_led2_godz_DO,
 				  jasnosc_led1_ustaw,
 				  jasnosc_led2_ustaw,
-				  czas_systemowy_godz, czas_systemowy_min,
-				  temperatura_ustaw};
+				  temperatura_ustaw,
+				  czas_systemowy_godz, czas_systemowy_min};
 
-void menu_ustaw(uint8_t wybor, uint8_t wartosc, menu_t *menu) {
+void menu_ustaw(uint8_t wybor, int8_t wartosc, menu_t *menu) {
 	switch(wybor) {
 	case czas_wodospad_godz_OD:
-		menu->czas_OD_wodospad.godz = wartosc;
-		wyswietl_napis("Czas wodospad");
+		if( menu->czas_OD_wodospad.godz >=24 )
+			menu->czas_OD_wodospad.godz = 0;
+		menu->czas_OD_wodospad.godz += wartosc;
+		wyswietl_napis("Czas woda ->");
 		lcd_locate(1, 0);
-//		lcd_int(wartosc);
 		lcd_int(menu->czas_OD_wodospad.godz);
 		lcd_char(':');
 		if(menu->czas_OD_wodospad.min <10) {
@@ -133,22 +131,11 @@ void menu_ustaw(uint8_t wybor, uint8_t wartosc, menu_t *menu) {
 		else
 			lcd_int(menu->czas_OD_wodospad.min);
 		break;
-	case czas_wodospad_min_OD:
-		menu->czas_OD_wodospad.min = wartosc;
-		wyswietl_napis("Czas wodospad");
-		lcd_locate(1, 0);
-		lcd_int(menu->czas_OD_wodospad.godz);
-		lcd_char(':');
-		if(wartosc < 10) {
-			lcd_int(0);
-			lcd_int(menu->czas_OD_wodospad.min);
-		}
-		else
-			lcd_int(menu->czas_OD_wodospad.min);
-		break;
 	case czas_wodospad_godz_DO:
-		menu->czas_DO_wodospad.godz = wartosc;
-		wyswietl_napis("Czas wodospad");
+		if( menu->czas_DO_wodospad.godz >=24 )
+			menu->czas_DO_wodospad.godz = 0;
+		menu->czas_DO_wodospad.godz += wartosc;
+		wyswietl_napis("Czas woda <-");
 		lcd_locate(1, 6);
 		lcd_int(menu->czas_DO_wodospad.godz);
 		lcd_char(':');
@@ -159,22 +146,11 @@ void menu_ustaw(uint8_t wybor, uint8_t wartosc, menu_t *menu) {
 		else
 			lcd_int(menu->czas_DO_wodospad.min);
 		break;
-	case czas_wodospad_min_DO:
-		menu->czas_DO_wodospad.min = wartosc;
-		wyswietl_napis("Czas wodospad");
-		lcd_locate(1, 6);
-		lcd_int(menu->czas_DO_wodospad.godz);
-		lcd_char(':');
-		if(wartosc <10) {
-			lcd_int(0);
-			lcd_int(menu->czas_DO_wodospad.min);
-		}
-		else
-			lcd_int(menu->czas_DO_wodospad.min);
-		break;
 	case czas_led1_godz_OD:
-		menu->czas_OD_led1.godz = wartosc;
-		wyswietl_napis("Czas LED1");
+		if( menu->czas_OD_led1.godz >=24 )
+			menu->czas_OD_led1.godz = 0;
+		menu->czas_OD_led1.godz += wartosc;
+		wyswietl_napis("Czas LED1 ->");
 		lcd_locate(1, 0);
 		lcd_int(menu->czas_OD_led1.godz);
 		lcd_char(':');
@@ -185,22 +161,11 @@ void menu_ustaw(uint8_t wybor, uint8_t wartosc, menu_t *menu) {
 		else
 			lcd_int(menu->czas_OD_led1.min);
 		break;
-	case czas_led1_min_OD:
-		menu->czas_OD_led1.min = wartosc;
-		wyswietl_napis("Czas LED1");
-		lcd_locate(1, 0);
-		lcd_int(menu->czas_OD_led1.godz);
-		lcd_char(':');
-		if(wartosc <10) {
-			lcd_int(0);
-			lcd_int(menu->czas_OD_led1.min);
-		}
-		else
-			lcd_int(menu->czas_OD_led1.min);
-		break;
 	case czas_led1_godz_DO:
-		menu->czas_DO_led1.godz = wartosc;
-		wyswietl_napis("Czas LED1");
+		if( menu->czas_DO_led1.godz>=24 )
+			menu->czas_DO_led1.godz = 0;
+		menu->czas_DO_led1.godz += wartosc;
+		wyswietl_napis("Czas LED1 <-");
 		lcd_locate(1, 6);
 		lcd_int(menu->czas_DO_led1.godz);
 		lcd_char(':');
@@ -211,35 +176,11 @@ void menu_ustaw(uint8_t wybor, uint8_t wartosc, menu_t *menu) {
 		else
 			lcd_int(menu->czas_DO_led1.min);
 		break;
-	case czas_led1_min_DO:
-		menu->czas_DO_led1.min = wartosc;
-		wyswietl_napis("Czas LED1");
-		lcd_locate(1, 6);
-		lcd_int(menu->czas_DO_led1.godz);
-		lcd_char(':');
-		if(wartosc <10) {
-			lcd_int(0);
-			lcd_int(menu->czas_DO_led1.min);
-		}
-		else
-			lcd_int(menu->czas_DO_led1.min);
-		break;
 	case czas_led2_godz_OD:
-		menu->czas_OD_led2.godz = wartosc;
-		wyswietl_napis("Czas LED2");
-		lcd_locate(1, 0);
-		lcd_int(menu->czas_OD_led2.godz);
-		lcd_char(':');
-		if(menu->czas_OD_led2.min <10) {
-			lcd_int(0);
-			lcd_int(menu->czas_OD_led2.min);
-		}
-		else
-			lcd_int(menu->czas_OD_led2.min);
-		break;
-	case czas_led2_min_OD:
-		menu->czas_OD_led2.min = wartosc;
-		wyswietl_napis("Czas LED2");
+		if( menu->czas_OD_led2.godz >=24 )
+			menu->czas_OD_led2.godz = 0;
+		menu->czas_OD_led2.godz += wartosc;
+		wyswietl_napis("Czas LED2 ->");
 		lcd_locate(1, 0);
 		lcd_int(menu->czas_OD_led2.godz);
 		lcd_char(':');
@@ -251,21 +192,10 @@ void menu_ustaw(uint8_t wybor, uint8_t wartosc, menu_t *menu) {
 			lcd_int(menu->czas_OD_led2.min);
 		break;
 	case czas_led2_godz_DO:
-		menu->czas_DO_led2.godz = wartosc;
-		wyswietl_napis("Czas LED2");
-		lcd_locate(1, 6);
-		lcd_int(menu->czas_DO_led2.godz);
-		lcd_char(':');
-		if(menu->czas_DO_led2.min <10) {
-			lcd_int(0);
-			lcd_int(menu->czas_DO_led2.min);
-		}
-		else
-			lcd_int(menu->czas_DO_led2.min);
-		break;
-	case czas_led2_min_DO:
-		menu->czas_DO_led2.min = wartosc;
-		wyswietl_napis("Czas LED2");
+		if( menu->czas_DO_led2.godz>=24 )
+			menu->czas_DO_led2.godz = 0;
+		menu->czas_DO_led2.godz += wartosc;
+		wyswietl_napis("Czas LED2 <-");
 		lcd_locate(1, 6);
 		lcd_int(menu->czas_DO_led2.godz);
 		lcd_char(':');
@@ -277,27 +207,31 @@ void menu_ustaw(uint8_t wybor, uint8_t wartosc, menu_t *menu) {
 			lcd_int(menu->czas_DO_led2.min);
 		break;
 	case jasnosc_led1_ustaw:
-		menu->jasnosc_led1 = wartosc;
+		menu->jasnosc_led1 += wartosc;
 		wyswietl_napis("Jasnosc LED1");
-		lcd_locate(1, 7);
-		lcd_int(wartosc);
+		lcd_locate(1, 0);
+		lcd_int(menu->jasnosc_led1);
 		OCR0A = menu->jasnosc_led1;
 		break;
 	case jasnosc_led2_ustaw:
-		menu->jasnosc_led2 = wartosc;
+		menu->jasnosc_led2 += wartosc;
 		wyswietl_napis("Jasnosc LED2");
-		lcd_locate(1, 7);
-		lcd_int(wartosc);
+		lcd_locate(1, 0);
+		lcd_int(menu->jasnosc_led2);
 		OCR0B = menu->jasnosc_led2;
 		break;
 	case temperatura_ustaw:
-		menu->temp = wartosc;
+		if( menu->temp >= 350 )
+			menu->temp = 0;
+		menu->temp += (uint16_t)wartosc;
 		wyswietl_napis("Ustaw temp.");
 		lcd_locate(1, 6);
-		lcd_int(menu->temp);
+		lcd_int( (menu->temp)/10 );
+		lcd_char('.');
+		lcd_int( (menu->temp)%10 );
 		break;
 	case czas_systemowy_godz:
-		menu->czas.godz = wartosc;
+		menu->czas.godz += wartosc;
 		wyswietl_napis("Ustaw czas");
 		lcd_locate(1, 0);
 		lcd_int(menu->czas.godz);
@@ -310,7 +244,7 @@ void menu_ustaw(uint8_t wybor, uint8_t wartosc, menu_t *menu) {
 			lcd_int(menu->czas.min);
 		break;
 	case czas_systemowy_min:
-		menu->czas.min = wartosc;
+		menu->czas.min += wartosc;
 		wyswietl_napis("Ustaw czas");
 		lcd_locate(1, 0);
 		lcd_int(menu->czas.godz);
@@ -323,72 +257,12 @@ void menu_ustaw(uint8_t wybor, uint8_t wartosc, menu_t *menu) {
 			lcd_int(menu->czas.min);
 		break;
 	}
-}
-
-uint8_t menu_pobierz_wartosc(uint8_t wybor, uint8_t *wartosc, menu_t *menu) {
-//	uint8_t wartosc;
-	switch(wybor) {
-	case czas_wodospad_godz_OD:
-		*wartosc = menu->czas_OD_wodospad.godz;
-		return *wartosc;
-		break;
-	case czas_wodospad_min_OD:
-		*wartosc = menu->czas_OD_wodospad.min;
-		return *wartosc;
-		break;
-	case czas_wodospad_godz_DO:
-		*wartosc = menu->czas_DO_wodospad.godz;
-		break;
-	case czas_wodospad_min_DO:
-		*wartosc = menu->czas_DO_wodospad.min;
-		break;
-	case czas_led1_godz_OD:
-		*wartosc = menu->czas_OD_led1.godz;
-		break;
-	case czas_led1_min_OD:
-		*wartosc = menu->czas_OD_led1.min;
-		break;
-	case czas_led1_godz_DO:
-		*wartosc = menu->czas_DO_led1.godz;
-		break;
-	case czas_led1_min_DO:
-		*wartosc = menu->czas_DO_led1.min;
-		break;
-	case czas_led2_godz_OD:
-		*wartosc = menu->czas_OD_led2.godz;
-		break;
-	case czas_led2_min_OD:
-		*wartosc = menu->czas_OD_led2.min;
-		break;
-	case czas_led2_godz_DO:
-		*wartosc = menu->czas_DO_led2.godz;
-		break;
-	case czas_led2_min_DO:
-		*wartosc = menu->czas_DO_led2.min;
-		break;
-	case jasnosc_led1_ustaw:
-		*wartosc = menu->jasnosc_led1;
-		break;
-	case jasnosc_led2_ustaw:
-		*wartosc = menu->jasnosc_led2;
-		break;
-	case czas_systemowy_godz:
-		*wartosc = menu->czas.godz;
-		break;
-	case czas_systemowy_min:
-		*wartosc = menu->czas.min;
-		break;
-	case temperatura_ustaw:
-		*wartosc = menu->temp;
-		break;
-	}
-	return *wartosc;
 }
 
 void menu_domyslne(menu_t *menu) {
 	menu->temp = 200;
 	menu->czas.godz = 12;
-	menu->czas.min = 30;
+	menu->czas.min = 0;
 	menu->czas_OD_led1.godz = 8;
 	menu->czas_OD_led1.min = 0;
 	menu->czas_DO_led1.godz = 18;
@@ -405,69 +279,11 @@ void menu_domyslne(menu_t *menu) {
 	menu->czas_DO_wodospad.min = 0;
 }
 
-void ustaw_temp(menu_t *menu, uint8_t temp) {
-	menu->temp = temp;
-}
-
-void ustaw_czas(czas_t czas) {
-	czas.godz = 12;
-	czas.min = 30;
-}
-
-void ustaw_czas_led1(menu_t *menu, czas_t czas_od, czas_t czas_do) {
-	menu->czas_OD_led1 = czas_od;
-	menu->czas_DO_led1 = czas_do;
-}
-
-void ustaw_czas_led2(menu_t *menu, czas_t czas_od, czas_t czas_do) {
-	menu->czas_OD_led2 = czas_od;
-	menu->czas_DO_led2 = czas_do;
-}
-
-void ustaw_jasnosc_led1(menu_t *menu, uint8_t jasnosc) {
-	menu->jasnosc_led1 = jasnosc;
-}
-
-void ustaw_jasnosc_led2(menu_t *menu, uint8_t jasnosc) {
-	menu->jasnosc_led2 = jasnosc;
-}
-
-void ustaw_czas_wodospad(menu_t *menu, czas_t czas_od, czas_t czas_do) {
-	menu->czas_OD_wodospad.godz = czas_od.godz;
-	menu->czas_OD_wodospad.min = czas_od.min;
-	menu->czas_DO_wodospad.godz = czas_do.godz;
-	menu->czas_DO_wodospad.min = czas_do.min;
-}
-
-void przekaznik(uint8_t wybor) {
-
-}
-
-void triak_t1(uint8_t wybor) {
-	if( wybor ) {
-		T1_ON;
-	}
-	else {
-		T1_OFF;
-	}
-}
-
-void triak_t2(uint8_t wybor) {
-	if( wybor ) {
-		T2_ON;
-	}
-	else {
-		T2_OFF;
-	}
-}
-
 void wyswietl_napis(char *str) {
 	lcd_cls();
 	lcd_locate(0,0);
 	lcd_str(str);
 }
-
-//enum
 
 void zapisz_ustawienia(menu_t *menu) {
 	eeprom_write(0x0000, menu->czas_OD_wodospad.godz);
@@ -480,29 +296,27 @@ void zapisz_ustawienia(menu_t *menu) {
 	eeprom_write(0x0007, menu->czas_OD_led1.min);
 	eeprom_write(0x0008, menu->czas_DO_led1.godz);
 	eeprom_write(0x0009, menu->czas_DO_led1.min);
-	eeprom_write(0x000A, menu->czas_OD_led1.godz);
-	eeprom_write(0x000B, menu->czas_OD_led1.min);
-	eeprom_write(0x000C, menu->czas_DO_led1.godz);
-	eeprom_write(0x000D, menu->czas_DO_led1.min);
+	eeprom_write(0x000A, menu->czas_OD_led2.godz);
+	eeprom_write(0x000B, menu->czas_OD_led2.min);
+	eeprom_write(0x000C, menu->czas_DO_led2.godz);
+	eeprom_write(0x000D, menu->czas_DO_led2.min);
 	eeprom_write(0x000E, menu->temp);
 }
 
-menu_t wczytaj_ustawienia() {
-	menu_t menu;
-	menu.czas_OD_wodospad.godz = eeprom_read(0x0000);
-	menu.czas_OD_wodospad.min = eeprom_read(0x0001);
-	menu.czas_DO_wodospad.godz = eeprom_read(0x0002);
-	menu.czas_DO_wodospad.min = eeprom_read(0x0003);
-	menu.jasnosc_led1 = eeprom_read(0x0004);
-	menu.jasnosc_led2 = eeprom_read(0x0005);
-	menu.czas_OD_led1.godz = eeprom_read(0x0006);
-	menu.czas_OD_led1.min = eeprom_read(0x0007);
-	menu.czas_DO_led1.godz = eeprom_read(0x0008);
-	menu.czas_DO_led1.min = eeprom_read(0x0009);
-	menu.czas_OD_led1.godz = eeprom_read(0x000A);
-	menu.czas_OD_led1.min = eeprom_read(0x000B);
-	menu.czas_DO_led1.godz = eeprom_read(0x000C);
-	menu.czas_DO_led1.min = eeprom_read(0x000D);
-	menu.temp = eeprom_read(0x000E);
-	return menu;
+void wczytaj_ustawienia(menu_t *menu) {
+	menu->czas_OD_wodospad.godz = eeprom_read(0x0000);
+	menu->czas_OD_wodospad.min = eeprom_read(0x0001);
+	menu->czas_DO_wodospad.godz = eeprom_read(0x0002);
+	menu->czas_DO_wodospad.min = eeprom_read(0x0003);
+	menu->jasnosc_led1 = eeprom_read(0x0004);
+	menu->jasnosc_led2 = eeprom_read(0x0005);
+	menu->czas_OD_led1.godz = eeprom_read(0x0006);
+	menu->czas_OD_led1.min = eeprom_read(0x0007);
+	menu->czas_DO_led1.godz = eeprom_read(0x0008);
+	menu->czas_DO_led1.min = eeprom_read(0x0009);
+	menu->czas_OD_led2.godz = eeprom_read(0x000A);
+	menu->czas_OD_led2.min = eeprom_read(0x000B);
+	menu->czas_DO_led2.godz = eeprom_read(0x000C);
+	menu->czas_DO_led2.min = eeprom_read(0x000D);
+	menu->temp = eeprom_read(0x000E);
 }
