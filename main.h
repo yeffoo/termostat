@@ -51,8 +51,8 @@
 #define BACKLIGHT_OFF PORTC |= (1 << PC0);
 
 typedef struct {
-	uint8_t godz;
-	uint8_t min;
+	int8_t godz;
+	int8_t min;
 } czas_t;
 
 typedef struct {

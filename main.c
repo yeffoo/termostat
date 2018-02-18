@@ -19,7 +19,6 @@ volatile uint16_t timer3; // refresh heating, triac T1, LED's
 volatile uint16_t timer4; // switch, debouncing
 volatile uint16_t timer5; // menu timing
 volatile uint16_t timer6; // switches UD
-volatile uint16_t timer7; // ?? zmienic
 
 extern uint8_t menu_pos;
 
@@ -86,34 +85,28 @@ int main() {
 
 	sei();
 
-	uint8_t state_flag = 0;
+	uint8_t state_flag = 0, menu_pos_last = 0;
 
 	BACKLIGHT_ON;
 
 	while(1) {
 
 // wejscie do menu, nastawy parametrow
-		if(menu_pos &&  (!timer7)) {
-//			BACKLIGHT_ON;
-			menu_ustaw(menu_pos, zmienna, &menu_gl);
-			if(zmienna) {
-//				menu_ustaw(menu_pos, zmienna, &menu_gl);
+		if(menu_pos) {
+			if(zmienna || (menu_pos_last != menu_pos) ) {
+				menu_pos_last = menu_pos;
+				menu_ustaw(menu_pos, zmienna, &menu_gl);
 				zmienna = 0;
-
 			}
-			timer7 = 100;
 			state_flag = 1;
 		}
-		else {
-// gdy ustawienie nieaktywne, to nastepuje zapis czasu do RTC oraz zapis nastaw do pamieci EEPROM
-		if(	state_flag == 1 ) {
-//				BACKLIGHT_OFF;
+		// gdy ustawienie nieaktywne, to nastepuje zapis czasu do RTC oraz zapis nastaw do pamieci EEPROM
+		else if( state_flag == 1 ) {
 			state_flag = 0;
 			czas_akt.godz = bin2bcd( menu_gl.czas.godz );
 			czas_akt.min = bin2bcd( menu_gl.czas.min );
 			pcf8583_set_time(&czas_akt);
 			zapisz_ustawienia(&menu_gl);
-		}
 		}
 
 // obsluga przycisku
@@ -129,13 +122,15 @@ int main() {
 			}
 		}
 
-		if( rtc_flag && (!menu_pos) ) {
-			rtc_flag = 0;
-			pcf8583_read_time(&czas_gl);
+		if( !menu_pos ) {
+			if(rtc_flag) {
+				rtc_flag = 0;
+				pcf8583_read_time(&czas_gl);
 
-			menu_gl.czas.godz = czas_gl.godz;//bcd_to_bin(minuty);
-			menu_gl.czas.min = czas_gl.min;//bcd_to_bin(sekundy);
-			menu_wyswietl_normalnie(&menu_gl, &zmienna);
+				menu_gl.czas.godz = czas_gl.godz;//bcd_to_bin(minuty);
+				menu_gl.czas.min = czas_gl.min;//bcd_to_bin(sekundy);
+				menu_wyswietl_normalnie(&menu_gl);
+			}
 		}
 // grzanie, wodospad oraz oswietlenie
 		if(!timer3) {
@@ -145,17 +140,17 @@ int main() {
 			} else {
 				T1_OFF; // grzanie w³
 			}
-			if( czas_gl.min >= menu_gl.czas_OD_wodospad.godz && czas_gl.min < menu_gl.czas_DO_wodospad.godz ) {
+			if( czas_gl.godz >= menu_gl.czas_OD_wodospad.godz && czas_gl.godz < menu_gl.czas_DO_wodospad.godz ) {
 				T2_ON;
 			} else {
 				T2_OFF;
 			}
-			if( czas_gl.min >= menu_gl.czas_OD_led1.godz && czas_gl.min < menu_gl.czas_DO_led1.godz ) {
+			if( czas_gl.godz >= menu_gl.czas_OD_led1.godz && czas_gl.godz < menu_gl.czas_DO_led1.godz ) {
 				LED1_CONNECTED;
 			} else {
 				LED1_DISCONNECTED;
 			}
-			if( czas_gl.min >= menu_gl.czas_OD_led2.godz && czas_gl.min < menu_gl.czas_DO_led2.godz ) {
+			if( czas_gl.godz >= menu_gl.czas_OD_led2.godz && czas_gl.godz < menu_gl.czas_DO_led2.godz ) {
 				LED2_CONNECTED;
 			} else {
 				LED2_DISCONNECTED;

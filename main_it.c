@@ -11,7 +11,6 @@ extern volatile uint16_t timer1; // ds18b20
 extern volatile uint16_t timer3; // refresh heating
 extern volatile uint16_t timer4; // switch
 extern volatile uint16_t timer5; // menu
-extern volatile uint16_t timer7; // backlight
 
 extern volatile uint16_t rtc_flag;
 extern volatile int8_t zmienna;
@@ -31,9 +30,6 @@ ISR(TIMER2_COMPA_vect) {
 	x = timer5;
 	if(x)
 		timer5 = --x;
-	x = timer7;
-	if(x)
-		timer7 = --x;
 }
 
 ISR(INT0_vect) {
