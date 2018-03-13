@@ -78,7 +78,7 @@ int main() {
 	}
 
 	gpio_init();
-	timer0_init();
+	timer0_init(menu_gl.jasnosc_led1, menu_gl.jasnosc_led2);
 	timer2_init();
 
 	PORTC &= ~(1 << PC0);
@@ -87,7 +87,11 @@ int main() {
 
 	uint8_t state_flag = 0, menu_pos_last = 0;
 
-	BACKLIGHT_ON;
+//	LED1_DISCONNECTED;
+//	LED2_DISCONNECTED;
+
+//	OCR0A = menu_gl.jasnosc_led1;
+//	OCR0B = menu_gl.jasnosc_led2;
 
 	while(1) {
 
@@ -111,7 +115,7 @@ int main() {
 
 // obsluga przycisku
 // po 4s wejscie do menu, kazde kolejne przycisniecie powoduje przejscie do nastepnej pozycji w menu
-		f_klaw(&PIND, BUTTON, 1000, 4000, 0, 0);
+		f_klaw(&PIND, BUTTON, 1000, 3000, 0, 0);
 
 // odczyt temperatury
 		if(!timer1) {
@@ -123,7 +127,7 @@ int main() {
 		}
 
 		if( !menu_pos ) {
-			if(rtc_flag) {
+			if(rtc_flag && !state_flag) {
 				rtc_flag = 0;
 				pcf8583_read_time(&czas_gl);
 
@@ -134,26 +138,34 @@ int main() {
 		}
 // grzanie, wodospad oraz oswietlenie
 		if(!timer3) {
-			timer3 = 5000;
-			if(temp_pobrana < menu_gl.temp) {
-				T1_ON; // grzanie wy³
-			} else {
-				T1_OFF; // grzanie w³
+			timer3 = 4000;
+			if( czas_gl.godz >= menu_gl.czas_OD_grzanie.godz && czas_gl.godz < menu_gl.czas_DO_grzanie.godz ) {
+				if(temp_pobrana < menu_gl.temp) {
+					T1_ON; // grzanie w³
+				} else {
+					T1_OFF; // grzanie wy³
+				}
 			}
+			else {
+				T1_OFF;
+			}
+
 			if( czas_gl.godz >= menu_gl.czas_OD_wodospad.godz && czas_gl.godz < menu_gl.czas_DO_wodospad.godz ) {
 				T2_ON;
 			} else {
 				T2_OFF;
 			}
 			if( czas_gl.godz >= menu_gl.czas_OD_led1.godz && czas_gl.godz < menu_gl.czas_DO_led1.godz ) {
-				LED1_CONNECTED;
-			} else {
 				LED1_DISCONNECTED;
+			} else {
+				LED1_CONNECTED;
 			}
 			if( czas_gl.godz >= menu_gl.czas_OD_led2.godz && czas_gl.godz < menu_gl.czas_DO_led2.godz ) {
 				LED2_CONNECTED;
+//				LED1_DISCONNECTED;
 			} else {
 				LED2_DISCONNECTED;
+//				LED1_CONNECTED;
 			}
 		}
 	}

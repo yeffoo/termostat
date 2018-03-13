@@ -48,10 +48,10 @@ void f_klaw(volatile uint8_t *KPIN,
 			last_key = key_mask;
 
 			if( menu_pos ) {
-				timer5 = 4000;
+				timer5 = 5000;
 				menu_pos++;
 			}
-			if( menu_pos >= 12 )
+			if( menu_pos >= 14 )
 				menu_pos = 1;
 		} else
 		if( !key_press && key_state>debounce && key_state<rep ) {
@@ -106,6 +106,7 @@ void menu_wyswietl_normalnie(menu_t *menu) {
 }
 
 enum emenu_ustaw {czas_wodospad_godz_OD=1, czas_wodospad_godz_DO,
+				  czas_grzanie_godz_OD, czas_grzanie_godz_DO,
 				  czas_led1_godz_OD, czas_led1_godz_DO,
 				  czas_led2_godz_OD, czas_led2_godz_DO,
 				  jasnosc_led1_ustaw,
@@ -152,6 +153,44 @@ void menu_ustaw(uint8_t wybor, int8_t wartosc, menu_t *menu) {
 		}
 		else
 			lcd_int(menu->czas_DO_wodospad.min);
+		break;
+	case czas_grzanie_godz_OD:
+		menu->czas_OD_grzanie.godz += wartosc;
+		if( menu->czas_OD_grzanie.godz >= menu->czas_DO_grzanie.godz )
+			menu->czas_OD_grzanie.godz = menu->czas_DO_grzanie.godz;
+		if( menu->czas_OD_grzanie.godz > 23 )
+			menu->czas_OD_grzanie.godz = 0;
+		else if( menu->czas_OD_grzanie.godz < 0 )
+			menu->czas_OD_grzanie.godz = 23;
+		wyswietl_napis("Czas grzanie  ->");
+		lcd_locate(1, 0);
+		lcd_int(menu->czas_OD_grzanie.godz);
+		lcd_char(':');
+		if(menu->czas_OD_grzanie.min <10) {
+			lcd_int(0);
+			lcd_int(menu->czas_OD_grzanie.min);
+		}
+		else
+			lcd_int(menu->czas_OD_grzanie.min);
+		break;
+	case czas_grzanie_godz_DO:
+		menu->czas_DO_grzanie.godz += wartosc;
+		if( menu->czas_DO_grzanie.godz <= menu->czas_OD_grzanie.godz )
+			menu->czas_DO_grzanie.godz = menu->czas_OD_grzanie.godz;
+		if( menu->czas_DO_grzanie.godz > 23 )
+			menu->czas_DO_grzanie.godz = 0;
+		else if( menu->czas_DO_grzanie.godz < 0 )
+			menu->czas_DO_grzanie.godz = 23;
+		wyswietl_napis("Czas grzanie  <-");
+		lcd_locate(1, 11);
+		lcd_int(menu->czas_DO_grzanie.godz);
+		lcd_char(':');
+		if(menu->czas_DO_grzanie.min <10) {
+			lcd_int(0);
+			lcd_int(menu->czas_DO_grzanie.min);
+		}
+		else
+			lcd_int(menu->czas_DO_grzanie.min);
 		break;
 	case czas_led1_godz_OD:
 		menu->czas_OD_led1.godz += wartosc;
@@ -291,7 +330,7 @@ void menu_ustaw(uint8_t wybor, int8_t wartosc, menu_t *menu) {
 }
 
 void menu_domyslne(menu_t *menu) {
-	menu->temp = 200;
+	menu->temp = 290;
 	menu->czas.godz = 12;
 	menu->czas.min = 0;
 	menu->czas_OD_led1.godz = 8;
@@ -308,6 +347,10 @@ void menu_domyslne(menu_t *menu) {
 	menu->czas_OD_wodospad.min = 0;
 	menu->czas_DO_wodospad.godz = 20;
 	menu->czas_DO_wodospad.min = 0;
+	menu->czas_OD_grzanie.godz = 7;
+	menu->czas_OD_grzanie.min = 0;
+	menu->czas_DO_grzanie.godz = 19;
+	menu->czas_DO_grzanie.min = 0;
 }
 
 void wyswietl_napis(char *str) {
@@ -331,10 +374,16 @@ void zapisz_ustawienia(menu_t *menu) {
 	eeprom_write(0x000B, menu->czas_OD_led2.min);
 	eeprom_write(0x000C, menu->czas_DO_led2.godz);
 	eeprom_write(0x000D, menu->czas_DO_led2.min);
-	eeprom_write(0x000E, menu->temp);
+	eeprom_write(0x000E, menu->czas_OD_grzanie.godz);
+	eeprom_write(0x000F, menu->czas_OD_grzanie.min);
+	eeprom_write(0x0010, menu->czas_DO_grzanie.godz);
+	eeprom_write(0x0011, menu->czas_DO_grzanie.min);
+	eeprom_write(0x0012, (menu->temp));
+	eeprom_write(0x0013, (menu->temp >> 8));
 }
 
 void wczytaj_ustawienia(menu_t *menu) {
+	uint8_t temp;
 	menu->czas_OD_wodospad.godz = eeprom_read(0x0000);
 	menu->czas_OD_wodospad.min = eeprom_read(0x0001);
 	menu->czas_DO_wodospad.godz = eeprom_read(0x0002);
@@ -349,5 +398,12 @@ void wczytaj_ustawienia(menu_t *menu) {
 	menu->czas_OD_led2.min = eeprom_read(0x000B);
 	menu->czas_DO_led2.godz = eeprom_read(0x000C);
 	menu->czas_DO_led2.min = eeprom_read(0x000D);
-	menu->temp = eeprom_read(0x000E);
+	menu->czas_OD_grzanie.godz = eeprom_read(0x000E);
+	menu->czas_OD_grzanie.min = eeprom_read(0x000F);
+	menu->czas_DO_grzanie.godz = eeprom_read(0x0010);
+	menu->czas_DO_grzanie.min = eeprom_read(0x0011);
+	temp = eeprom_read(0x0012);
+	menu->temp = (temp);
+	temp = eeprom_read(0x0013);
+	menu->temp |= (temp << 8);
 }

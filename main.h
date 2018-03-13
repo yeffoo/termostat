@@ -66,6 +66,8 @@ typedef struct {
 	uint8_t jasnosc_led2;
 	czas_t czas_OD_wodospad;
 	czas_t czas_DO_wodospad;
+	czas_t czas_OD_grzanie;
+	czas_t czas_DO_grzanie;
 } menu_t;
 
 #endif /* MAIN_H_ */

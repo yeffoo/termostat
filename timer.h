@@ -10,7 +10,7 @@
 
 #include "main.h"
 
-void timer0_init();
+void timer0_init(uint8_t pwm1, uint8_t pwm_2);
 void timer2_init();
 
 #endif /* TIMER_H_ */

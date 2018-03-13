@@ -37,7 +37,7 @@ ISR(INT0_vect) {
 }
 
 ISR(INT1_vect) {
-	timer5 = 4000;
+	timer5 = 5000;
 	if( !(PINC & ENKODER_A) ) {
 		zmienna = 1;
 	}
